@@ -1,0 +1,19 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:EpubReaderP.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="EpubReaderP.Views.ReadingPageView"
+        x:DataType="vm:ReadingPageViewModel"
+        Title="ReadingPageView">
+
+  <Grid RowDefinitions="Auto, *">
+    <Border Grid.Row="0" Height="{OnPlatform 0, Windows=30}">
+      <TextBlock Text="{OnPlatform '', Windows='{Binding Book.Title}'}"
+                 VerticalAlignment="Center"
+                 Margin="{OnPlatform '0', Windows='10 0'}" />
+    </Border>
+    <TextBlock Grid.Row="1" Text="Welcome" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+  </Grid>
+</Window>

@@ -1,0 +1,57 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="using:EpubReaderP.Views"
+        xmlns:vm="using:EpubReaderP.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="using:FluentAvalonia.UI.Controls"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="EpubReaderP.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="EpubReaderP">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto, *">
+      <Border Grid.Row="0" Height="{OnPlatform 0, Windows=30}">
+        <TextBlock Text="{OnPlatform '', Windows='{Binding Title, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}'}"
+                   VerticalAlignment="Center"
+                   Margin="{OnPlatform '0', Windows='10 0'}" />
+      </Border>
+      <DockPanel Grid.Row="1">
+        <StackPanel DockPanel.Dock="Top"
+                    Orientation="Horizontal">
+          <v:FilePickerView DataContext="{Binding FilePicker}" />
+          <Button Content="Remove" Command="{Binding RemoveSelectedBookCommand}" />
+        </StackPanel>
+
+        <ScrollViewer>
+          <ListBox ItemsSource="{Binding Books}"
+                   Background="Transparent"
+                   SelectedItem="{Binding SelectedBook}">
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel />
+              </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel>
+                  <TextBlock Text="{Binding Title}" />
+                  <TextBlock Text="{Binding Author}" />
+                  <TextBlock Text="{Binding HasCover}" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </ScrollViewer>
+      </DockPanel>
+    </Grid>
+
+</Window>
