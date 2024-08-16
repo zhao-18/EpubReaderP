@@ -31,7 +31,8 @@
         </StackPanel>
 
         <ScrollViewer>
-          <ListBox ItemsSource="{Binding Books}"
+          <ListBox Name="BookList"
+                   ItemsSource="{Binding Books}"
                    Background="Transparent"
                    SelectedItem="{Binding SelectedBook}">
             <ListBox.ItemsPanel>
@@ -42,10 +43,10 @@
 
             <ListBox.ItemTemplate>
               <DataTemplate>
-                <StackPanel>
-                  <TextBlock Text="{Binding Title}" />
-                  <TextBlock Text="{Binding Author}" />
-                  <TextBlock Text="{Binding HasCover}" />
+                <StackPanel Width="180" Height="300" PointerPressed="OnBookDoubleClicked">
+                  <Image Source="{Binding Cover}" Height="200" Stretch="Uniform" HorizontalAlignment="Center" />
+                  <TextBlock Text="{Binding Title}" TextTrimming="WordEllipsis" FontSize="16" />
+                  <TextBlock Text="{Binding Author}" TextTrimming="WordEllipsis" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>

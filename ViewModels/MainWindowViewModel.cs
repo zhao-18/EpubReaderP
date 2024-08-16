@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Windows.Input;
 using System;
+using Avalonia.Controls;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 
 namespace EpubReaderP.ViewModels;
 
@@ -36,14 +39,6 @@ public class MainWindowViewModel : ViewModelBase
         }
     }
 
-    public void ReadBook()
-    {
-        if (SelectedBook is null) return;
-        ReadingPageView ReadingWindow = new ReadingPageView(SelectedBook);
-
-        ReadingWindow.Show();
-    }
-
     public ICommand RemoveSelectedBookCommand { get; }
     public void RemoveSelectedBook()
     {
@@ -68,7 +63,7 @@ public class MainWindowViewModel : ViewModelBase
             File.Delete(BookCacheFile);
         }
 
-        string BookCoverCacheFile = Path.Combine(Constants.COVER_IMAGE_FOLDER, book.Title + book.Id + ".png");
+        string BookCoverCacheFile = Path.Combine(Constants.COVER_IMAGE_FOLDER, book.Title + book.Id + ".bmp");
         if (book.HasCover && File.Exists(BookCacheFile))
         {
             File.Delete(BookCoverCacheFile);
@@ -81,9 +76,29 @@ public class MainWindowViewModel : ViewModelBase
         try
         {
             using EpubBookRef epubBook = EpubReader.OpenBook(e.File);
-            Book book = new Book(Books.Count, e.File, epubBook.Title, epubBook.Author, epubBook.ReadCover() != null);
+            byte[]? coverImage = epubBook.ReadCover();
+
+          
+            Book book = new Book(Books.Count, e.File, epubBook.Title, epubBook.Author, null);
+            if (coverImage is null)
+            {
+                book.Cover = new Bitmap(AssetLoader.Open(new Uri(Constants.GENERIC_COVER_IMAGE_SOURCE)));
+                Books.Add(book);
+                SaveBookAsync(book);
+                return;
+            }
+
+            MemoryStream CoverStream = new MemoryStream(coverImage);
+            Bitmap CoverBitmap = Task.Run(() => Bitmap.DecodeToHeight(CoverStream, Constants.COVER_MAX_HEIGHT)).Result;
+            book.Cover = CoverBitmap;
+            book.HasCover = true;
             Books.Add(book);
             SaveBookAsync(book);
+
+            using (Stream fs = File.OpenWrite(Path.Combine(Constants.COVER_IMAGE_FOLDER, book.Title + book.Id + ".bmp")))
+            {
+                CoverBitmap.Save(fs);
+            }
         } 
         catch (System.Xml.XmlException x)
         {
@@ -113,6 +128,7 @@ public class MainWindowViewModel : ViewModelBase
             Book? book = await ItemLoader.LoadItemAsync<Book>(file);
 
             if (book is null) continue;
+            book.Cover = Task.Run(async () => await book.LoadCoverFromCache()).Result;
             Books.Add(book);
         }
     }

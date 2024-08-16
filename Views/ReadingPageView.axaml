@@ -6,7 +6,8 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="EpubReaderP.Views.ReadingPageView"
         x:DataType="vm:ReadingPageViewModel"
-        Title="ReadingPageView">
+        Title="{Binding Book.Title}"
+        WindowStartupLocation="CenterOwner">
 
   <Grid RowDefinitions="Auto, *">
     <Border Grid.Row="0" Height="{OnPlatform 0, Windows=30}">

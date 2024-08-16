@@ -1,6 +1,7 @@
 ﻿using EpubReaderP.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,7 +23,7 @@ namespace EpubReaderP.ViewModels
             EpubBook = EpubReader.ReadBook(book.FilePath);
         }
 
-        Book Book { get; set; }
-        EpubBook EpubBook { get; set; }
+        public Book Book { get; set; }
+        public EpubBook EpubBook { get; set; }
     }
 }
