@@ -4,6 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:EpubReaderP.ViewModels"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        Width="2000" Height="1000"
         x:Class="EpubReaderP.Views.ReadingPageView"
         x:DataType="vm:ReadingPageViewModel"
         Title="{Binding Book.Title}"
@@ -15,6 +16,34 @@
                  VerticalAlignment="Center"
                  Margin="{OnPlatform '0', Windows='10 0'}" />
     </Border>
-    <TextBlock Grid.Row="1" Text="Welcome" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+    <Grid Grid.Row="1" ColumnDefinitions="200, 4, *, 4, *">
+      
+      <TreeView DockPanel.Dock="Left"
+                Margin="10"
+                ItemsSource="{Binding Navigation}"
+                SelectedItem="{Binding CurrentChapterOnSelectedPane}"
+                Grid.Column="0">
+        <TreeView.ItemTemplate>
+          <TreeDataTemplate ItemsSource="{Binding NestedItems}">
+              <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
+          </TreeDataTemplate>
+        </TreeView.ItemTemplate>
+      </TreeView>
+      <GridSplitter Grid.Column="1" />
+      <StackPanel Grid.Column="2" 
+                  PointerPressed="SwitchPaneTo0"
+                  Background="Transparent">
+        <TextBlock Text="{Binding CurrentChapter0Content}" />
+      </StackPanel>
+      <GridSplitter Grid.Column="3" />
+      <StackPanel Grid.Column="4" 
+                  PointerPressed="SwitchPaneTo1" 
+                  Background="Transparent">
+        <TextBlock Text="{Binding CurrentChapter1Content}" />
+      </StackPanel>
+
+    </Grid>
+
   </Grid>
 </Window>

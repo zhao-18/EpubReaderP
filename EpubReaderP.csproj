@@ -23,4 +23,16 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2651.64" />
     <PackageReference Include="VersOne.Epub" Version="3.3.2" />
   </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaXaml Update="Views\ReadingPageView.axaml">
+      <Generator>MSBuild:Compile</Generator>
+    </AvaloniaXaml>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\ReadingPageView.axaml.cs">
+      <DependentUpon>ReadingPageView.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>
