@@ -4,9 +4,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using VersOne.Epub;
 
 namespace EpubReaderP.ViewModels
@@ -15,19 +17,34 @@ namespace EpubReaderP.ViewModels
     {
         public ReadingPageViewModel(Book book)
         {
+            PrevPageCommand = ReactiveCommand.Create(PrevPage);
+            NextPageCommand = ReactiveCommand.Create(NextPage);
+
             Book = book;
             EpubBook = EpubReader.ReadBook(book.FilePath);
+            ReadingOrder = GetReadingOrder();
             Navigation = EpubBook.Navigation;
 
             if (Navigation is not null)
             {
                 AddNavigationItem(EntireNavigationList, Navigation);
+            }
 
-                _currentChapter0 = EntireNavigationList[Book.CurrentChapter0];
-                UpdateCurrentContent(0);
+            if (ReadingOrder.Count > Book.CurrentChapter0)
+            {
+                _currentChapter0 = ReadingOrder[Book.CurrentChapter0];
+                _currentAnchor0 = EntireNavigationList.Find(item => item.HtmlContentFile?.Content == CurrentChapter0?.HtmlContent)?.Link?.Anchor ?? string.Empty;
+            }
 
-                _currentChapter1 = EntireNavigationList[Book.CurrentChapter1];
-                UpdateCurrentContent(1);
+            if (ReadingOrder.Count > Book.CurrentChapter1)
+            {
+                _currentChapter1 = ReadingOrder[Book.CurrentChapter1];
+                _currentAnchor1 = EntireNavigationList.Find(item => item.HtmlContentFile?.Content == CurrentChapter1?.HtmlContent)?.Link?.Anchor ?? string.Empty;
+            }
+
+            if (EpubBook.FilePath is not null)
+            {
+                EpubArchive = ZipFile.OpenRead(EpubBook.FilePath);
             }
         }
 
@@ -38,16 +55,34 @@ namespace EpubReaderP.ViewModels
 
         public List<EpubNavigationItem> EntireNavigationList { get; set; } = new List<EpubNavigationItem>();
 
-        public List<string> Chapters
-        {
-            get => Navigation?[0].NestedItems.Select(item => item.Title).ToList() ?? new List<string>();
-        }
+        public List<HtmlContentFileViewModel> ReadingOrder { get; set; }
+
+        public ZipArchive? EpubArchive { get; set; }
 
         public int _currentPane = 0;
         public int CurrentPane
         {
             get => _currentPane;
-            set => this.RaiseAndSetIfChanged(ref _currentPane, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _currentPane, value);
+                this.RaisePropertyChanged(nameof(CurrentChapterOnSelectedPane));
+            }
+        }
+
+        private bool _loadStyleSheets = true;
+        public bool LoadStyleSheets
+        {
+            get => _loadStyleSheets;
+            set
+            {
+                if (value != _loadStyleSheets)
+                {
+                    this.RaisePropertyChanged(nameof(CurrentChapter0));
+                    this.RaisePropertyChanged(nameof(CurrentChapter1));
+                }
+                this.RaiseAndSetIfChanged(ref _loadStyleSheets, value);
+            }
         }
 
         public EpubNavigationItem? CurrentChapterOnSelectedPane
@@ -56,28 +91,70 @@ namespace EpubReaderP.ViewModels
             {
                 if (CurrentPane == 0)
                 {
-                    return CurrentChapter0;
+                    return EntireNavigationList.Find(item => item.HtmlContentFile?.Content == CurrentChapter0?.HtmlContent);
                 } 
                 else
                 {
-                    return CurrentChapter1;
+                    return EntireNavigationList.Find(item => item.HtmlContentFile?.Content == CurrentChapter1?.HtmlContent);
                 }
             }
             set
             {
                 if (CurrentPane == 0)
                 {
-                    CurrentChapter0 = value;
+                    CurrentChapter0 = ReadingOrder.Find(item => item.HtmlContent == value?.HtmlContentFile?.Content);
+                    CurrentAnchor0 = value?.Link?.Anchor ?? string.Empty;
                 }
                 else
                 {
-                    CurrentChapter1 = value;
+                    CurrentChapter1 = ReadingOrder.Find(item => item.HtmlContent == value?.HtmlContentFile?.Content);
+                    CurrentAnchor1 = value?.Link?.Anchor ?? string.Empty;
                 }
             }
         }
 
-        private EpubNavigationItem? _currentChapter0;
-        public EpubNavigationItem? CurrentChapter0 { 
+        public ICommand NextPageCommand { get; }
+        private void NextPage()
+        {
+            if (CurrentPane == 0)
+            {
+                if (Book.CurrentChapter0 < ReadingOrder.Count - 1)
+                {
+                    CurrentChapter0 = ReadingOrder[Book.CurrentChapter0 + 1];
+                }
+            }
+            else
+            {
+                if (Book.CurrentChapter1 < ReadingOrder.Count - 1)
+                {
+                    CurrentChapter1 = ReadingOrder[Book.CurrentChapter1 + 1];
+                }
+            }
+            this.RaisePropertyChanged(nameof(CurrentChapterOnSelectedPane));
+        }
+
+        public ICommand PrevPageCommand { get; }
+        private void PrevPage()
+        {
+            if (CurrentPane == 0)
+            {
+                if (Book.CurrentChapter0 > 1)
+                {
+                    CurrentChapter0 = ReadingOrder[Book.CurrentChapter0 - 1];
+                }
+            }
+            else
+            {
+                if (Book.CurrentChapter1 > 1)
+                {
+                    CurrentChapter1 = ReadingOrder[Book.CurrentChapter1 - 1];
+                }
+            }
+            this.RaisePropertyChanged(nameof(CurrentChapterOnSelectedPane));
+        }
+
+        private HtmlContentFileViewModel? _currentChapter0;
+        public HtmlContentFileViewModel? CurrentChapter0 { 
             get
             {
                 return _currentChapter0;
@@ -86,38 +163,26 @@ namespace EpubReaderP.ViewModels
             set
             {
                 if (value is null) return;
-                if (value.Link is null) return;
                 this.RaiseAndSetIfChanged(ref _currentChapter0, value);
-
-                int chapter = EntireNavigationList.FindIndex(navItem => navItem == value);
+                
+                int chapter = ReadingOrder.FindIndex(navItem => navItem == value);
                 if (Book.CurrentChapter0 != chapter)
                 {
                     Book.CurrentChapter0 = chapter;
-                    UpdateCurrentContent(0);
                     SaveBookAsync(Book);
                 }
             }
         }
 
-        private string _currentChapter0Content = string.Empty;
-        public string CurrentChapter0Content
+        private string _currentAnchor0 = string.Empty;
+        public string CurrentAnchor0
         {
-            get
-            {
-                return _currentChapter0Content;
-            }
-            private set
-            {
-                EpubNavigationItemLink? NavigationItemLink = CurrentChapter0?.Link;
-                if (NavigationItemLink is null) return;
-
-                int chapter = EntireNavigationList.FindIndex(navItem => navItem == CurrentChapter0);
-                this.RaiseAndSetIfChanged(ref _currentChapter0Content, EpubBook.Content.Html.Local[chapter].Content);
-            }
+            get => _currentAnchor0;
+            set => this.RaiseAndSetIfChanged(ref _currentAnchor0, value);
         }
 
-        private EpubNavigationItem? _currentChapter1;
-        public EpubNavigationItem? CurrentChapter1
+        private HtmlContentFileViewModel? _currentChapter1;
+        public HtmlContentFileViewModel? CurrentChapter1
         {
             get
             {
@@ -126,36 +191,42 @@ namespace EpubReaderP.ViewModels
 
             set
             {
-                this.RaiseAndSetIfChanged(ref _currentChapter1, value);
-
                 if (value is null) return;
-                int chapter = EntireNavigationList.FindIndex(navItem => navItem == value);
+                this.RaiseAndSetIfChanged(ref _currentChapter1, value);
+                
+                if (value is null) return;
+                int chapter = ReadingOrder.FindIndex(navItem => navItem == value);
                 if (Book.CurrentChapter1 != chapter)
                 {
                     Book.CurrentChapter1 = chapter;
-                    UpdateCurrentContent(1);
                     SaveBookAsync(Book);
                 }
             }
         }
 
-        private string _currentChapter1Content = string.Empty;
-        public string CurrentChapter1Content
+        private string _currentAnchor1 = string.Empty;
+        public string CurrentAnchor1
         {
-            get
-            {
-                return _currentChapter1Content;
-            }
-            private set
-            {
-                EpubNavigationItemLink? NavigationItemLink = CurrentChapter1?.Link;
-                if (NavigationItemLink is null) return;
-
-                int chapter = EntireNavigationList.FindIndex(navItem => navItem == CurrentChapter1);
-                this.RaiseAndSetIfChanged(ref _currentChapter1Content, EpubBook.Content.Html.Local[chapter].Content);
-            }
+            get => _currentAnchor1;
+            set => this.RaiseAndSetIfChanged(ref _currentAnchor1, value);
         }
 
+        internal List<HtmlContentFileViewModel> GetReadingOrder()
+        {
+            Dictionary<string, byte[]> images = EpubBook.Content.Images.Local.ToDictionary(imageFile => imageFile.Key, imageFile => imageFile.Content);
+            Dictionary<string, string> styleSheets = EpubBook.Content.Css.Local.ToDictionary(cssFile => cssFile.Key, cssFile => cssFile.Content);
+            Dictionary<string, byte[]> fonts = EpubBook.Content.Fonts.Local.ToDictionary(fontFile => fontFile.Key, fontFile => fontFile.Content);
+
+            List<HtmlContentFileViewModel> ret = new();
+            foreach(EpubLocalTextContentFile htmlFile in EpubBook.ReadingOrder)
+            {
+                ret.Add(new HtmlContentFileViewModel(htmlFile.Key, htmlFile.FilePath, htmlFile.Content, images, styleSheets, fonts));
+            }
+
+            return ret;
+        }
+
+        
         internal void AddNavigationItem(List<EpubNavigationItem> Target, List<EpubNavigationItem> Source)
         {
             foreach (EpubNavigationItem nestedNavigationItem in Source)
@@ -165,17 +236,6 @@ namespace EpubReaderP.ViewModels
                     Target.Add(nestedNavigationItem);
                 }
                 AddNavigationItem(Target, nestedNavigationItem.NestedItems);
-            }
-        }
-
-        internal void UpdateCurrentContent(int paneNumber)
-        {
-            if (paneNumber == 0)
-            {
-                CurrentChapter0Content = string.Empty;
-            } else if (paneNumber == 1)
-            {
-                CurrentChapter1Content = string.Empty;
             }
         }
 

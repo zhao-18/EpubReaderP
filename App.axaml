@@ -3,7 +3,7 @@
              xmlns:sty="using:FluentAvalonia.Styling"
              x:Class="EpubReaderP.App"
              xmlns:local="using:EpubReaderP"
-             RequestedThemeVariant="Default">
+             RequestedThemeVariant="Light">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.DataTemplates>

@@ -22,6 +22,8 @@ namespace EpubReaderP.Models
         public static async Task SaveItemAsync<T>(T Item,  string path)
         {
             using FileStream fs = File.OpenWrite(path);
+            fs.SetLength(0);
+            fs.Flush();
             await JsonSerializer.SerializeAsync(fs, Item);
         }
     }

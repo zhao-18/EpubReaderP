@@ -23,9 +23,10 @@
                    VerticalAlignment="Center"
                    Margin="{OnPlatform '0', Windows='10 0'}" />
       </Border>
-      <DockPanel Grid.Row="1">
+      <DockPanel Grid.Row="1" Margin="10">
         <StackPanel DockPanel.Dock="Top"
-                    Orientation="Horizontal">
+                    Orientation="Horizontal"
+                    Spacing="10">
           <v:FilePickerView DataContext="{Binding FilePicker}" />
           <Button Content="Remove" Command="{Binding RemoveSelectedBookCommand}" />
         </StackPanel>
@@ -43,8 +44,8 @@
 
             <ListBox.ItemTemplate>
               <DataTemplate>
-                <StackPanel Width="180" Height="300" PointerPressed="OnBookDoubleClicked">
-                  <Image Source="{Binding Cover}" Height="200" Stretch="Uniform" HorizontalAlignment="Center" />
+                <StackPanel Width="180" Height="280" PointerPressed="OnBookDoubleClicked">
+                  <Image Source="{Binding Cover}" Height="200" Stretch="Uniform" HorizontalAlignment="Center" Margin="0, 20, 0, 0" />
                   <TextBlock Text="{Binding Title}" TextTrimming="WordEllipsis" FontSize="16" />
                   <TextBlock Text="{Binding Author}" TextTrimming="WordEllipsis" />
                 </StackPanel>
